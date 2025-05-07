@@ -27,6 +27,7 @@ public class Main {
         char[][] ataques1 = inicializarMapa();
         char[][] ataques2 = inicializarMapa();
 
+        // Posicionamento dos barcos para o jogador 1
         System.out.println("\n" + jogador1 + ", deseja posicionar os barcos automaticamente? (S/N)");
         String resposta = sc.nextLine().trim();
         if (resposta.equalsIgnoreCase("S")) {
@@ -35,6 +36,7 @@ public class Main {
             posicionarManual(mapa1, sc, jogador1);
         }
 
+        // Posicionamento dos barcos para o jogador 2 (ou computador)
         if (modo.equals("M")) {
             System.out.println("\n" + jogador2 + ", deseja posicionar os barcos automaticamente? (S/N)");
             resposta = sc.nextLine().trim();
@@ -48,77 +50,72 @@ public class Main {
         }
 
         boolean turnoJogador1 = true;
-        boolean acertou;
 
-        while (true) {
+        // Loop principal do jogo
+        boolean fimDeJogo = false;
+        while (!fimDeJogo) {
+            boolean acertou;
+
             if (turnoJogador1) {
                 System.out.println("\n" + jogador1 + ", sua vez de atacar!");
                 exibirMapa(ataques1);
                 int[] coord = obterCoordenadasValidas(sc, ataques1);
                 int linha = coord[0], coluna = coord[1];
 
-                if (mapa2[linha][coluna] == 'O') {
-                    System.out.println("Acertou!");
-                    ataques1[linha][coluna] = 'X';
-                    mapa2[linha][coluna] = 'X';
-                    acertou = true;
-                } else {
-                    System.out.println("Errou!");
-                    ataques1[linha][coluna] = '*';
-                    mapa2[linha][coluna] = '*';
-                    acertou = false;
-                }
+                // Verifica se acertou
+                acertou = realizarAtaque(mapa2, ataques1, linha, coluna);
 
                 if (verificarVitoria(mapa2)) {
                     System.out.println("\n" + jogador1 + " venceu!");
-                    break;
-                }
-
-                if (!acertou) {
-                    turnoJogador1 = !turnoJogador1;
+                    fimDeJogo = true;
                 }
             } else {
                 System.out.println("\n" + jogador2 + ", sua vez de atacar!");
                 exibirMapa(ataques2);
-                int linha, coluna;
 
+                int linha, coluna;
                 if (jogador2.equals("Computador")) {
+                    // Geração de ataque automático do computador
                     do {
                         linha = rand.nextInt(TAMANHO);
                         coluna = rand.nextInt(TAMANHO);
                     } while (ataques2[linha][coluna] != '~');
                     System.out.println("Computador atacou (" + linha + ", " + coluna + ")");
                 } else {
-                    Scanner scJogador2 = new Scanner(System.in);
-                    int[] coord = obterCoordenadasValidas(scJogador2, ataques2);
+                    int[] coord = obterCoordenadasValidas(sc, ataques2);
                     linha = coord[0];
                     coluna = coord[1];
                 }
 
-                if (mapa1[linha][coluna] == 'O') {
-                    System.out.println("Acertou!");
-                    ataques2[linha][coluna] = 'X';
-                    mapa1[linha][coluna] = 'X';
-                    acertou = true;
-                } else {
-                    System.out.println("Errou!");
-                    ataques2[linha][coluna] = '*';
-                    mapa1[linha][coluna] = '*';
-                    acertou = false;
-                }
+                acertou = realizarAtaque(mapa1, ataques2, linha, coluna);
 
                 if (verificarVitoria(mapa1)) {
                     System.out.println("\n" + jogador2 + " venceu!");
-                    break;
+                    fimDeJogo = true;
                 }
+            }
 
-                if (!acertou) {
-                    turnoJogador1 = !turnoJogador1;
-                }
+            // Troca de turno caso o jogador tenha errado o ataque
+            if (!acertou) {
+                turnoJogador1 = !turnoJogador1;
             }
         }
 
         sc.close();
+    }
+
+    static boolean realizarAtaque(char[][] mapaOponente, char[][] mapaAtaque, int linha, int coluna) {
+        if (mapaOponente[linha][coluna] == 'O') {
+            System.out.println("Acertou!");
+            mapaOponente[linha][coluna] = 'X';
+            mapaAtaque[linha][coluna] = 'X';
+            return true;
+        } else {
+            System.out.println("Errou!");
+            mapaOponente[linha][coluna] = '*';
+            mapaAtaque[linha][coluna] = '*';
+            return false;
+        }
     }
 
     static String pedirNome(Scanner sc, String quem) {
@@ -130,7 +127,7 @@ public class Main {
         char[][] mapa = new char[TAMANHO][TAMANHO];
         for (int i = 0; i < TAMANHO; i++) {
             for (int j = 0; j < TAMANHO; j++) {
-                mapa[i][j] = '~';
+                mapa[i][j] = '~'; // Água
             }
         }
         return mapa;
@@ -157,23 +154,17 @@ public class Main {
         System.out.println("- 3 navios de 2 posições");
         System.out.println("- 4 navios de 1 posição");
 
-        // Navio tm 4
         posicionarBarcoManual(mapa, sc, jogador, 4, 1);
-
-        // Navios tm 3
         posicionarBarcoManual(mapa, sc, jogador, 3, 2);
-
-        // Navios tm 2
         posicionarBarcoManual(mapa, sc, jogador, 2, 3);
-
-        // Navios tm 1
         posicionarBarcoManual(mapa, sc, jogador, 1, 4);
     }
 
     static void posicionarBarcoManual(char[][] mapa, Scanner sc, String jogador, int tamanho, int quantidade) {
         for (int q = 0; q < quantidade; q++) {
-            System.out.println(jogador + ", posicione o " + (q+1) + "º barco de " + tamanho + " casas.");
-            while (true) {
+            boolean posicionado = false;
+            while (!posicionado) {
+                System.out.println(jogador + ", posicione o " + (q + 1) + "º barco de " + tamanho + " casas.");
                 System.out.print("Informe linha, coluna e direção (H/V - para navios de 1 posição use qualquer direção): ");
                 String input = sc.nextLine().trim();
                 String[] partes = input.split(" ");
@@ -187,9 +178,9 @@ public class Main {
                     int linha = Integer.parseInt(partes[0]);
                     int coluna = Integer.parseInt(partes[1]);
                     String direcao = tamanho > 1 ? partes[2].toUpperCase() : "H";
-                    if (posicionarBarco(mapa, linha, coluna, tamanho, direcao)) {
+                    posicionado = posicionarBarco(mapa, linha, coluna, tamanho, direcao);
+                    if (posicionado) {
                         exibirMapa(mapa);
-                        break;
                     } else {
                         System.out.println("Posição inválida! Tente novamente.");
                     }
@@ -201,16 +192,9 @@ public class Main {
     }
 
     static void posicionarAutomaticamente(char[][] mapa, Random rand) {
-        // Navio de 4
         posicionarBarcoAutomatico(mapa, rand, 4, 1);
-
-        // Navios de 3
         posicionarBarcoAutomatico(mapa, rand, 3, 2);
-
-        // Navios de 2
         posicionarBarcoAutomatico(mapa, rand, 2, 3);
-
-        // Navios de 1
         posicionarBarcoAutomatico(mapa, rand, 1, 4);
     }
 
@@ -251,23 +235,25 @@ public class Main {
 
     static int[] obterCoordenadasValidas(Scanner sc, char[][] ataques) {
         int linha, coluna;
-        while (true) {
+        boolean coordenadasValidas = false;
+        while (!coordenadasValidas) {
             System.out.print("Informe linha e coluna para atacar (ex: 1 2): ");
             linha = sc.nextInt();
             coluna = sc.nextInt();
-            sc.nextLine(); // Limpa o buffer
+            sc.nextLine();
             if (linha < 0 || linha >= TAMANHO || coluna < 0 || coluna >= TAMANHO) {
                 System.out.println("Coordenadas inválidas! Fora do mapa.");
             } else if (ataques[linha][coluna] != '~') {
                 System.out.println("Você já atacou essa posição! Escolha outra.");
             } else {
-                break;
+                coordenadasValidas = true;
             }
         }
         return new int[]{linha, coluna};
     }
 
     static boolean verificarVitoria(char[][] mapa) {
+        // Verifica se ainda existem partes de navio ('O') no mapa
         for (int i = 0; i < TAMANHO; i++) {
             for (int j = 0; j < TAMANHO; j++) {
                 if (mapa[i][j] == 'O') return false;
